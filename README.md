@@ -1,4 +1,4 @@
-# Fielder Robot — ROS2 Gazebo Simulator
+# Fielder_gz — ROS2 Gazebo Simulator
 
 A ROS2-based robot simulation project using Gazebo Harmonic, Nav2, and SLAM Toolbox for autonomous navigation and mapping.
 
@@ -137,7 +137,7 @@ source ~/.bashrc
 Launches RViz2 with the robot URDF, robot description, and joint states loaded.
 
 ```bash
-ros2 launch fielder_robot display.launch.py
+ros2 launch fielder_gz display.launch.py
 ```
 
 ### Run the Gazebo Simulation
@@ -145,7 +145,7 @@ ros2 launch fielder_robot display.launch.py
 Spawns the robot in a preloaded Gazebo world with all required plugins active.
 
 ```bash
-ros2 launch fielder_robot fielder_sim.launch.py
+ros2 launch fielder_gz fielder_sim.launch.py
 ```
 
 ### Create a Map (SLAM Mapping Mode)
@@ -153,7 +153,7 @@ ros2 launch fielder_robot fielder_sim.launch.py
 Runs SLAM Toolbox to build a map of the environment. Drive the robot around to explore, then save the map.
 
 ```bash
-ros2 launch fielder_robot mapping.launch.py
+ros2 launch fielder_gz mapping.launch.py
 ```
 
 > **Tip:** Maps are saved to the `maps/` directory. Save the map before closing SLAM Toolbox or your progress will be lost.
@@ -163,7 +163,7 @@ ros2 launch fielder_robot mapping.launch.py
 Runs SLAM Toolbox in localization mode using a previously saved map. **Must be launched before navigation.**
 
 ```bash
-ros2 launch fielder_robot localization.launch.py
+ros2 launch fielder_gz localization.launch.py
 ```
 
 ### Autonomous Navigation (Nav2)
@@ -172,10 +172,10 @@ Runs the Nav2 stack for autonomous navigation. Requires localization to already 
 
 ```bash
 # Terminal 1 — start localization first
-ros2 launch fielder_robot localization.launch.py
+ros2 launch fielder_gz localization.launch.py
 
 # Terminal 2 — then start navigation
-ros2 launch fielder_robot navigation.launch.py
+ros2 launch fielder_gz navigation.launch.py
 ```
 
 ### Full Bringup (All-in-One)
@@ -183,7 +183,7 @@ ros2 launch fielder_robot navigation.launch.py
 Launches the complete stack — Gazebo, SLAM, localization, and Nav2 — in a single command.
 
 ```bash
-ros2 launch fielder_robot fielder_bringup.launch.py
+ros2 launch fielder_gz fielder_bringup.launch.py
 ```
 
 ---
@@ -191,7 +191,7 @@ ros2 launch fielder_robot fielder_bringup.launch.py
 ## 4. Project Structure
 
 ```
-fielder_robot/
+fielder_gz/
 ├── config/                         # Configuration files for each launch file
 │                                   # Edit these to tune simulation, SLAM, and Nav2 parameters
 ├── launch/
@@ -283,9 +283,9 @@ check_urdf <(xacro src/fielder_robot/urdf/gazebo_fielder.urdf.xacro)
 **Navigation not working** — localization must be running *before* navigation:
 ```bash
 # Terminal 1
-ros2 launch fielder_robot localization.launch.py
+ros2 launch fielder_gz localization.launch.py
 # Terminal 2
-ros2 launch fielder_robot navigation.launch.py
+ros2 launch fielder_gz navigation.launch.py
 ```
 
 ---
