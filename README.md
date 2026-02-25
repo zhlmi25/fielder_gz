@@ -31,11 +31,20 @@ sudo apt install \
   ros-jazzy-nav2-bringup \
   ros-jazzy-ros-gz-sim \
   ros-jazzy-ros-gz-bridge
-
-# Gazebo Harmonic (standalone simulator)
-sudo apt-get install ros-jazzy-ros-gz
 ```
-
+# Gazebo Harmonic (standalone simulator)
+##Install some necessary tools first:
+```bash
+sudo apt-get update
+sudo apt-get install curl lsb-release gnupg
+```
+##Then install Gazebo Harmonic:
+```bash
+sudo curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] https://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+sudo apt-get update
+sudo apt-get install gz-harmonic
+```
 Confirm Gazebo installed correctly:
 
 ```bash
