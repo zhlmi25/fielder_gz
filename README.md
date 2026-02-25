@@ -7,14 +7,13 @@ A ROS2-based robot simulation project using Gazebo Harmonic, Nav2, and SLAM Tool
 ## Prerequisites
 
 - **OS:** Ubuntu 24.04 (Noble)
-- **ROS2:** Jazzy Jalisco — [Installation Guide](https://docs.ros.org/en/jazzy/Installation.html)
-- **Git** installed and configured
+- **ROS2 Jazzy** fully installed — follow the [official ROS2 Jazzy installation guide](https://docs.ros.org/en/jazzy/Installation.html) before continuing
 
 Verify your ROS2 installation before proceeding:
 
 ```bash
 echo $ROS_DISTRO
-# Expected: JAZZY
+# Expected output: jazzy
 ```
 
 ---
@@ -33,7 +32,7 @@ sudo apt install \
   ros-jazzy-ros-gz-sim \
   ros-jazzy-ros-gz-bridge
 
-# Gazebo Harmonic (standalone)
+# Gazebo Harmonic (standalone simulator)
 sudo apt install gazebo-harmonic
 ```
 
@@ -52,59 +51,79 @@ gz sim --version
 
 ## 2. Full Workflow — Clone to Running Simulation
 
-### Step 1 — Clone the Repository
+### Step 1 — Create the Workspace and Clone the Repository
 
 ```bash
+# Create the workspace directory
 mkdir -p ~/ros2_ws/src
+
+# Navigate into src and clone the repository
 cd ~/ros2_ws/src
-git clone https://github.com/<your-org>/fielder_robot.git
+git clone https://github.com/zhlmi25/fielder_gz.git
 ```
 
-### Step 2 — Install ROS Dependencies via rosdep
+Your workspace should now look like this:
+
+```
+~/ros2_ws/
+└── src/
+    └── fielder_gz/
+        └── fielder_robot/
+```
+
+### Step 2 — Resolve Package Dependencies
+
+From the **workspace root**, run rosdep to install any remaining dependencies declared in `package.xml`:
 
 ```bash
 cd ~/ros2_ws
-
-# Only needed once — initializes rosdep
-sudo rosdep init       # skip if already initialized
-rosdep update
-
-# Resolve and install all package dependencies
 rosdep install --from-paths src --ignore-src -r -y
 ```
 
-> **Tip:** The `-r` flag tells rosdep to continue even if some optional dependencies fail.
+> **What each flag does:**
+> - `--from-paths src` — scan the `src/` folder for packages
+> - `--ignore-src` — skip packages already present as source code
+> - `-r` — continue even if some optional dependencies are unavailable
+> - `-y` — automatically confirm all install prompts
 
 ### Step 3 — Build the Workspace
 
+Always build from the **workspace root** (`~/ros2_ws`), not from inside `src/`.
+
 ```bash
 cd ~/ros2_ws
-
-# Full build
 colcon build
 
 # Or build only fielder_robot (faster during development)
 colcon build --packages-select fielder_robot
 ```
 
-> **Tip:** Use `--symlink-install` to skip rebuilds when editing Python scripts or launch files:
+> **Tip:** Use `--symlink-install` to avoid rebuilding after editing Python scripts or launch files:
 > ```bash
 > colcon build --symlink-install
 > ```
 
+After a successful build your workspace will contain:
+
+```
+~/ros2_ws/
+├── src/        ← your source code
+├── build/      ← intermediate build files (auto-generated)
+├── install/    ← compiled outputs (auto-generated)
+└── log/        ← build logs (auto-generated)
+```
+
 ### Step 4 — Source the Workspace
 
-Run this in every new terminal, or add it to `~/.bashrc` to apply automatically:
+After building, source the workspace so ROS2 can find the `fielder_robot` package:
 
 ```bash
-source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
 ```
 
-Add to `~/.bashrc` permanently:
+Add it permanently to `~/.bashrc` so every new terminal is ready:
 
 ```bash
-echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc
 source ~/.bashrc
 ```
@@ -131,17 +150,17 @@ ros2 launch fielder_robot fielder_sim.launch.py
 
 ### Create a Map (SLAM Mapping Mode)
 
-Runs SLAM Toolbox to build a map of the environment. Drive the robot around to explore the space, then save the map.
+Runs SLAM Toolbox to build a map of the environment. Drive the robot around to explore, then save the map.
 
 ```bash
 ros2 launch fielder_robot mapping.launch.py
 ```
 
-> **Tip:** Maps are saved to the `maps/` directory. Make sure to save the map before closing SLAM Toolbox.
+> **Tip:** Maps are saved to the `maps/` directory. Save the map before closing SLAM Toolbox or your progress will be lost.
 
 ### Localize the Robot
 
-Runs SLAM Toolbox in localization mode using a previously saved map. **This must be launched before starting navigation.**
+Runs SLAM Toolbox in localization mode using a previously saved map. **Must be launched before navigation.**
 
 ```bash
 ros2 launch fielder_robot localization.launch.py
@@ -161,7 +180,7 @@ ros2 launch fielder_robot navigation.launch.py
 
 ### Full Bringup (All-in-One)
 
-Launches the complete simulation stack — Gazebo, SLAM, localization, and Nav2 — in a single command.
+Launches the complete stack — Gazebo, SLAM, localization, and Nav2 — in a single command.
 
 ```bash
 ros2 launch fielder_robot fielder_bringup.launch.py
@@ -198,7 +217,7 @@ fielder_robot/
 
 ## 5. Configuration
 
-All tunable parameters live in the `config/` directory. Each launch file has a corresponding config file — edit these to adjust behaviour without modifying launch files directly.
+All tunable parameters live in the `config/` directory. Edit these to adjust behaviour without touching launch files directly.
 
 | Launch File | Config Purpose |
 |---|---|
@@ -235,7 +254,7 @@ ros2 topic echo /odom
 
 **Build fails with missing dependencies**
 ```bash
-rosdep update && rosdep install --from-paths src --ignore-src -r -y
+rosdep install --from-paths src --ignore-src -r -y
 ```
 
 **`gz sim` not found or crashes on launch**
@@ -244,7 +263,7 @@ source /opt/ros/jazzy/setup.bash
 gz sim --version
 ```
 
-**Nodes not found after building**
+**Package not found after building**
 ```bash
 source ~/ros2_ws/install/setup.bash
 ```
@@ -258,13 +277,10 @@ colcon build
 
 **URDF or Xacro errors in Gazebo**
 ```bash
-# Validate the root Xacro file before launching
 check_urdf <(xacro src/fielder_robot/urdf/gazebo_fielder.urdf.xacro)
 ```
 
-**Navigation not working**
-
-Make sure localization is running *before* launching navigation:
+**Navigation not working** — localization must be running *before* navigation:
 ```bash
 # Terminal 1
 ros2 launch fielder_robot localization.launch.py
@@ -281,6 +297,4 @@ ros2 launch fielder_robot navigation.launch.py
 - [Nav2 Documentation](https://navigation.ros.org/)
 - [SLAM Toolbox Documentation](https://github.com/SteveMacenski/slam_toolbox)
 - [colcon Build Documentation](https://colcon.readthedocs.io/en/released/)
-
----
 
