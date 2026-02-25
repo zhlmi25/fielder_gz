@@ -1,84 +1,288 @@
-# ROS2 Fielder Gazebo Simulator Setup Guide
+# Fielder Robot — ROS2 Gazebo Simulator
 
-This guide will help you set up the necessary dependencies for this ROS2 project.
+A ROS2-based robot simulation project using Gazebo Harmonic, Nav2, and SLAM Toolbox for autonomous navigation and mapping.
+
+---
 
 ## Prerequisites
 
-Make sure you have **ROS2 Jazzy** installed on your system. If not, follow the [official ROS2 Jazzy installation guide](https://docs.ros.org/en/jazzy/Installation.html).
+- **OS:** Ubuntu 24.04 (Noble)
+- **ROS2:** Jazzy Jalisco — [Installation Guide](https://docs.ros.org/en/jazzy/Installation.html)
+- **Git** installed and configured
+
+Verify your ROS2 installation before proceeding:
+
+```bash
+ros2 --version
+# Expected: ros2 cli version X.X.X
+```
+
+---
 
 ## 1. Install Package Dependencies
 
-Install the required ROS2 packages for this project:
-
 ```bash
-# Install joint_state_publisher and joint_state_publisher_gui
-sudo apt install ros-jazzy-joint-state-publisher ros-jazzy-joint-state-publisher-gui
+sudo apt update
 
-# Install xacro
-sudo apt install ros-jazzy-xacro
+# URDF/Xacro, joint state publisher, SLAM, Nav2, and Gazebo-ROS bridge
+sudo apt install \
+  ros-jazzy-xacro \
+  ros-jazzy-joint-state-publisher \
+  ros-jazzy-slam-toolbox \
+  ros-jazzy-nav2-bringup \
+  ros-jazzy-ros-gz-sim \
+  ros-jazzy-ros-gz-bridge
 
-# Install SLAM Toolbox
-sudo apt install ros-jazzy-slam-toolbox
-
-# Install Nav2
-sudo apt install ros-jazzy-navigation2 ros-jazzy-nav2-bringup
-
-# Install additional useful tools
-sudo apt install ros-jazzy-turtlebot3* ros-jazzy-robot-state-publisher
+# Gazebo Harmonic (standalone)
+sudo apt install gazebo-harmonic
 ```
 
-## 2. Install Gazebo for ROS2 Jazzy
-
-ROS2 Jazzy uses **Gazebo Harmonic** (formerly Ignition Gazebo).
+Confirm Gazebo installed correctly:
 
 ```bash
-# Install Gazebo Harmonic
-sudo apt install ros-jazzy-ros-gz
-
-# Install Gazebo simulation packages
-sudo apt install ros-jazzy-gazebo-ros-pkgs ros-jazzy-gazebo-ros2-control
-
-# Verify installation
 gz sim --version
 ```
 
-## Building the Workspace
+> **Tip:** If `gz sim --version` fails, source ROS2 first and retry:
+> ```bash
+> source /opt/ros/jazzy/setup.bash && gz sim --version
+> ```
 
-After installing all dependencies, build your workspace:
+---
+
+## 2. Full Workflow — Clone to Running Simulation
+
+### Step 1 — Clone the Repository
 
 ```bash
-# Navigate to your workspace
-cd ~/your_ros2_workspace
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
+git clone https://github.com/<your-org>/fielder_robot.git
+```
 
-# Install dependencies using rosdep
+### Step 2 — Install ROS Dependencies via rosdep
+
+```bash
+cd ~/ros2_ws
+
+# Only needed once — initializes rosdep
+sudo rosdep init       # skip if already initialized
+rosdep update
+
+# Resolve and install all package dependencies
 rosdep install --from-paths src --ignore-src -r -y
+```
 
-# Build the workspace
+> **Tip:** The `-r` flag tells rosdep to continue even if some optional dependencies fail.
+
+### Step 3 — Build the Workspace
+
+```bash
+cd ~/ros2_ws
+
+# Full build
 colcon build
 
-# Source the workspace
-source install/setup.bash
+# Or build only fielder_robot (faster during development)
+colcon build --packages-select fielder_robot
 ```
 
-## Running the Project
+> **Tip:** Use `--symlink-install` to skip rebuilds when editing Python scripts or launch files:
+> ```bash
+> colcon build --symlink-install
+> ```
+
+### Step 4 — Source the Workspace
+
+Run this in every new terminal, or add it to `~/.bashrc` to apply automatically:
 
 ```bash
-# Launch your robot in Gazebo
-ros2 launch <your_package> <your_launch_file>
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_ws/install/setup.bash
 ```
+
+Add to `~/.bashrc` permanently:
+
+```bash
+echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+```
+
+---
+
+## 3. Launch Files
+
+### Visualize the Robot in RViz2
+
+Launches RViz2 with the robot URDF, robot description, and joint states loaded.
+
+```bash
+ros2 launch fielder_robot display.launch.py
+```
+
+### Run the Gazebo Simulation
+
+Spawns the robot in a preloaded Gazebo world with all required plugins active.
+
+```bash
+ros2 launch fielder_robot fielder_sim.launch.py
+```
+
+### Create a Map (SLAM Mapping Mode)
+
+Runs SLAM Toolbox to build a map of the environment. Drive the robot around to explore the space, then save the map.
+
+```bash
+ros2 launch fielder_robot mapping.launch.py
+```
+
+> **Tip:** Maps are saved to the `maps/` directory. Make sure to save the map before closing SLAM Toolbox.
+
+### Localize the Robot
+
+Runs SLAM Toolbox in localization mode using a previously saved map. **This must be launched before starting navigation.**
+
+```bash
+ros2 launch fielder_robot localization.launch.py
+```
+
+### Autonomous Navigation (Nav2)
+
+Runs the Nav2 stack for autonomous navigation. Requires localization to already be running.
+
+```bash
+# Terminal 1 — start localization first
+ros2 launch fielder_robot localization.launch.py
+
+# Terminal 2 — then start navigation
+ros2 launch fielder_robot navigation.launch.py
+```
+
+### Full Bringup (All-in-One)
+
+Launches the complete simulation stack — Gazebo, SLAM, localization, and Nav2 — in a single command.
+
+```bash
+ros2 launch fielder_robot fielder_bringup.launch.py
+```
+
+---
+
+## 4. Project Structure
+
+```
+fielder_robot/
+├── config/                         # Configuration files for each launch file
+│                                   # Edit these to tune simulation, SLAM, and Nav2 parameters
+├── launch/
+│   ├── display.launch.py           # RViz2 visualization
+│   ├── fielder_sim.launch.py       # Gazebo simulation with world + plugins
+│   ├── mapping.launch.py           # SLAM Toolbox — map creation
+│   ├── localization.launch.py      # SLAM Toolbox — localization only
+│   ├── navigation.launch.py        # Nav2 autonomous navigation
+│   └── fielder_bringup.launch.py   # Full stack bringup (all-in-one)
+├── maps/                           # Stores maps generated by the mapping process
+├── urdf/
+│   ├── fielder_chassis.urdf.xacro  # Robot chassis geometry
+│   ├── gazebo_control.xacro        # Odometry plugin for simulation
+│   ├── gazebo_fielder.xacro        # Root Xacro — includes all URDF files
+│   ├── gazebo_lidar.xacro          # LIDAR sensor simulation plugin
+│   └── gazebo_visual.xacro         # Visual appearance, colors, and materials
+├── worlds/                         # Preloaded Gazebo world(s) — add custom .sdf files here
+├── CMakeLists.txt                  # Build instructions
+└── package.xml                     # Package metadata and dependencies
+```
+
+---
+
+## 5. Configuration
+
+All tunable parameters live in the `config/` directory. Each launch file has a corresponding config file — edit these to adjust behaviour without modifying launch files directly.
+
+| Launch File | Config Purpose |
+|---|---|
+| `display.launch.py` | RViz2 display config |
+| `fielder_sim.launch.py` | Gazebo world and plugin settings |
+| `mapping.launch.py` | SLAM Toolbox mapping parameters |
+| `localization.launch.py` | SLAM Toolbox localization parameters |
+| `navigation.launch.py` | Nav2 planner, controller, and costmap settings |
+
+---
+
+## 6. Verify Everything is Running
+
+```bash
+# List all active nodes
+ros2 node list
+
+# List all active topics
+ros2 topic list
+
+# Check the TF tree (useful for debugging transform issues)
+ros2 run tf2_tools view_frames
+
+# Inspect LIDAR data
+ros2 topic echo /scan
+
+# Inspect odometry
+ros2 topic echo /odom
+```
+
+---
 
 ## Troubleshooting
 
-- If you encounter dependency issues, run: `rosdep update && rosdep install --from-paths src --ignore-src -r -y`
-- Make sure you've sourced both ROS2 and your workspace: `source /opt/ros/jazzy/setup.bash && source install/setup.bash`
-- For Gazebo issues, check that the `gz sim` command works independently
+**Build fails with missing dependencies**
+```bash
+rosdep update && rosdep install --from-paths src --ignore-src -r -y
+```
+
+**`gz sim` not found or crashes on launch**
+```bash
+source /opt/ros/jazzy/setup.bash
+gz sim --version
+```
+
+**Nodes not found after building**
+```bash
+source ~/ros2_ws/install/setup.bash
+```
+
+**Old build artifacts causing strange errors**
+```bash
+cd ~/ros2_ws
+rm -rf build/ install/ log/
+colcon build
+```
+
+**URDF or Xacro errors in Gazebo**
+```bash
+# Validate the root Xacro file before launching
+check_urdf <(xacro src/fielder_robot/urdf/gazebo_fielder.urdf.xacro)
+```
+
+**Navigation not working**
+
+Make sure localization is running *before* launching navigation:
+```bash
+# Terminal 1
+ros2 launch fielder_robot localization.launch.py
+# Terminal 2
+ros2 launch fielder_robot navigation.launch.py
+```
+
+---
 
 ## Additional Resources
 
 - [ROS2 Jazzy Documentation](https://docs.ros.org/en/jazzy/)
-- [Gazebo Documentation](https://gazebosim.org/docs)
+- [Gazebo Harmonic Documentation](https://gazebosim.org/docs/harmonic)
 - [Nav2 Documentation](https://navigation.ros.org/)
 - [SLAM Toolbox Documentation](https://github.com/SteveMacenski/slam_toolbox)
+- [colcon Build Documentation](https://colcon.readthedocs.io/en/released/)
+
+---
 
 ## License
 
