@@ -284,10 +284,3 @@ ros2 launch fielder_robot navigation.launch.py
 
 ---
 
-## License
-
-[Add your license here]
-
-## Contributors
-
-[Add contributors here]
