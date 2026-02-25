@@ -69,7 +69,6 @@ Your workspace should now look like this:
 ~/ros2_ws/
 └── src/
     └── fielder_gz/
-        └── fielder_robot/
 ```
 
 ### Step 2 — Resolve Package Dependencies
