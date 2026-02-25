@@ -13,8 +13,8 @@ A ROS2-based robot simulation project using Gazebo Harmonic, Nav2, and SLAM Tool
 Verify your ROS2 installation before proceeding:
 
 ```bash
-ros2 --version
-# Expected: ros2 cli version X.X.X
+echo $ROS_DISTRO
+# Expected: JAZZY
 ```
 
 ---
