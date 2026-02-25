@@ -33,7 +33,7 @@ sudo apt install \
   ros-jazzy-ros-gz-bridge
 
 # Gazebo Harmonic (standalone simulator)
-sudo apt install gazebo-harmonic
+sudo apt-get install ros-jazzy-ros-gz
 ```
 
 Confirm Gazebo installed correctly:
